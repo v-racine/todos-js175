@@ -1,8 +1,11 @@
-doctype html
+extends layout
 
-html(lang="en-US")
-  head
-    title Todo App
-  body
-    header
-      h1 Todo Tracker
+block main
+  if todoLists === undefined || todoLists.length === 0
+    p#no_list You don't have any todo lists. Why not create one?
+  else
+    p You have some lists. We need to list them.
+
+block headerLinks
+  .actions
+    a.add(href="/lists/new") New List

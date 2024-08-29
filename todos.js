@@ -1,20 +1,26 @@
-const express = require("express");
-const morgan = require("morgan");
+// const express = require("express");
+// const morgan = require("morgan");
 
-const app = express();
-const host = "localhost";
-const port = 3000;
+// const app = express();
+// const host = "localhost";
+// const port = 3000;
 
-app.set("views", "./views");
-app.set("view engine", "pug");
+// //static data for initial testing (not persistent)
+// let todoLists = require("./lib/seed-data");
 
-app.use(morgan("common"));
+// app.set("views", "./views");
+// app.set("view engine", "pug");
 
-app.get("/", (req, res) => {
-  res.render("lists");
-})
+// app.use(morgan("common"));
+// app.use(express.static("public"));
 
-//Listener
-app.listen(port, host, () => {
-  console.log(`Todos is listening on port ${port} of ${host}!`);
-});
+// app.get("/", (req, res) => {
+//   res.render("lists");
+// })
+
+// //Listener
+// app.listen(port, host, () => {
+//   console.log(`Todos is listening on port ${port} of ${host}!`);
+// });
+
+module.exports = [];
