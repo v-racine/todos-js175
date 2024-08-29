@@ -57,8 +57,24 @@ app.get("/lists/new", (req, res) => {
 
 app.post("/lists", (req, res) => {
   let title = req.body.todoListTitle.trim();
-  todoLists.push(new TodoList(title));
-  res.redirect("/lists");
+  if (title.length === 0) {
+    res.render("new-list", {
+      errorMessage: "A title was not provided.",
+    });
+  } else if (title.length > 100) {
+    res.render("new-list", {
+      errorMessage: "List title must be between 1 and 100 characters.",
+      todoListTitle: title,
+    });
+  } else if (todoLists.some(list => list.title === title)) {
+    res.render("new-list", {
+      errorMessage: "List title must be unique.",
+      todoListTitle: title,
+    });
+  } else {
+    todoLists.push(new TodoList(title));
+    res.redirect("/lists");
+  }
 });
 
 //Listener
