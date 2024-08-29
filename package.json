@@ -2,7 +2,7 @@
   "name": "todos-js175",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "todos.js",
   "directories": {
     "lib": "lib"
   },
