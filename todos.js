@@ -201,6 +201,19 @@ app.post("/lists/:todoListId/todos",
   }
 );
 
+//Renders the edit todo list page
+app.get("/lists/:todoListId/edit", (req, res, next) => {
+  let todoListId = req.params.todoListId;
+  let todoList = loadTodoList(+todoListId, req.session.todoLists);
+
+  if (!todoList) {
+    next(new Error("Not found."));
+  } else {
+    res.render("edit-list", { todoList });
+  }
+
+});
+
 //Error Handler
 app.use((err, req, res, _next) => {
   console.log(err); 
