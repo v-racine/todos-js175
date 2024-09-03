@@ -25,7 +25,9 @@ app.use(session({
   saveUninitialized: true,
   secret: "this is not very secure",
 }));
+
 app.use(flash());
+
 app.use((req, res, next) => {
   res.locals.flash = req.session.flash;
   delete req.session.flash;
@@ -33,9 +35,9 @@ app.use((req, res, next) => {
 });
 
 //compare todo list titles alphabetically 
-const compareByTitle = (todoListA, todoListB) => {
-  let titleA = todoListA.title.toLowerCase();
-  let titleB = todoListB.title.toLowerCase();
+const compareByTitle = (itemA, itemB) => {
+  let titleA = itemA.title.toLowerCase();
+  let titleB = itemB.title.toLowerCase();
 
   if (titleA < titleB) {
     return - 1;
@@ -55,6 +57,20 @@ const sortTodoLists = lists => {
   done.sort(compareByTitle);
 
   return undone.concat(done); //instead of calling concat on `[]`
+};
+
+//Find a todo list with the indicated ID.
+const loadTodoList = todoListId => {
+  return todoLists.find(todoList => todoList.id === todoListId);
+}
+
+const sortTodos = todoList => {
+  let undone = todoList.todos.filter(todo => !todo.isDone());
+  let done = todoList.todos.filter(todo => todo.isDone());
+
+  undone.sort(compareByTitle);
+  done.sort(compareByTitle);
+  return [].concat(undone, done);
 };
 
 app.get("/", (req, res) => {
@@ -100,6 +116,29 @@ app.post("/lists",
     }
   }
 );
+
+//render individual todo list 
+app.get("/lists/:todoListId", (req, res, next) => {
+  let todoListId = req.params.todoListId;
+  let todoList = loadTodoList(+todoListId);
+
+  if (todoList === undefined) {
+    next(new Error("Not found."));
+  } else {
+    res.render("list", {
+      todoList: todoList,
+      todos: sortTodos(todoList),
+    });
+  }
+});
+
+//Error Handler
+app.use((err, req, res, _next) => {
+  console.log(err); 
+  res.status(404).send(err.message);
+});
+
+
 //Listener
 app.listen(port, host, () => {
   console.log(`Todos is listening on port ${port} of ${host}!`);
