@@ -6,13 +6,15 @@ const { body, validationResult } = require("express-validator");
 const TodoList = require("./lib/todolist");
 const Todo = require("./lib/todo");
 const { sortTodoLists, sortTodos } = require("./lib/sort");
+const store = require("connect-loki");
 
 const app = express();
 const host = "localhost";
 const port = 3000;
+const LokiStore = store(session);
 
 //static data for initial testing (not persistent)
-let todoLists = require("./lib/seed-data");
+//let todoLists = require("./lib/seed-data");
 
 app.set("views", "./views");
 app.set("view engine", "pug");
@@ -22,13 +24,33 @@ app.use(express.static("public"));
 app.use(express.urlencoded({ extended: false }));
 
 app.use(session({
+  cookie: {
+    httpOnly: true,
+    maxAge: 31 * 24 * 60 * 60 * 1000, // 31 days in ms
+    path: "/",
+    secure: false,
+  },
   name: "launch-school-todos-session-id",
   resave: false,
   saveUninitialized: true,
   secret: "this is not very secure",
+  store: new LokiStore({}),
 }));
 
 app.use(flash());
+
+//Persistent data
+app.use((req, res, next) => {
+  let todoLists = [];
+  if ("todoLists" in req.session) {
+    req.session.todoLists.forEach(todoList => {
+      todoLists.push(TodoList.makeTodoList(todoList));
+    })
+  }
+
+  req.session.todoLists = todoLists;
+  next();
+});
 
 app.use((req, res, next) => {
   res.locals.flash = req.session.flash;
@@ -37,7 +59,7 @@ app.use((req, res, next) => {
 });
 
 //Finds a todo list with the indicated ID.
-const loadTodoList = todoListId => {
+const loadTodoList = (todoListId, todoLists) => {
   return todoLists.find(todoList => todoList.id === todoListId);
 }
 
@@ -55,7 +77,7 @@ app.get("/", (req, res) => {
 
 app.get("/lists", (req, res) => {
   res.render("lists", {
-    todoLists: sortTodoLists(todoLists),
+    todoLists: sortTodoLists(req.session.todoLists),
   })
 });
 
@@ -72,7 +94,8 @@ app.post("/lists",
       .withMessage("The list title is required.")
       .isLength({ max: 100 })
       .withMessage("List title must be between 1 and 100 characters.")
-      .custom(title => {
+      .custom((title, { req }) => {
+        let todoLists = req.session.todoLists;
         let duplicate = todoLists.find(list => list.title === title);
         return duplicate === undefined;
       })
@@ -87,7 +110,7 @@ app.post("/lists",
         todoListTitle: req.body.todoListTitle,
       });
     } else {
-      todoLists.push(new TodoList(req.body.todoListTitle));
+      req.session.todoLists.push(new TodoList(req.body.todoListTitle));
       req.flash("success", "The todo list has been created.");
       res.redirect("/lists");
     }
@@ -97,7 +120,7 @@ app.post("/lists",
 //Renders individual todo list 
 app.get("/lists/:todoListId", (req, res, next) => {
   let todoListId = req.params.todoListId;
-  let todoList = loadTodoList(+todoListId);
+  let todoList = loadTodoList(+todoListId, req.session.todoLists);
 
   if (todoList === undefined) {
     next(new Error("Not found."));
@@ -135,7 +158,7 @@ app.post("/lists/:todoListId/todos/:todoId/destroy", (req, res, next) => {
   let { todoListId, todoId } = { ...req.params };
   let todoList = loadTodoList(+todoListId, req.session.todoLists);
 
-  if (!todoLists) {
+  if (!todoList) {
     next(new Error("Not found."));
   } else {
     let todo = loadTodo(+todoListId, +todoId, req.session.todoLists);
@@ -216,7 +239,7 @@ app.get("/lists/:todoListId/edit", (req, res, next) => {
 
 //Deletes a todo list 
 app.post("/lists/:todoListId/destroy", (req, res, next) => {
-  //let todoLists = req.session.todoLists;
+  let todoLists = req.session.todoLists;
   let todoListId = +req.params.todoListId;
   let index = todoLists.findIndex(todoList => todoList.id === todoListId);
 
@@ -240,7 +263,7 @@ app.post("/lists/:todoListId/edit",
       .isLength({ max: 100 })
       .withMessage("List title must be between 1 and 100 characters.")
       .custom((title, { req }) => {
-        //let todoLists = req.session.todoLists;
+        let todoLists = req.session.todoLists;
         let duplicate = todoLists.find(list => list.title === title);
         return duplicate === undefined;
       })
