@@ -40,7 +40,7 @@ app.use(session({
 app.use(flash());
 
 //Persistent data
-app.use((req, res, next) => {
+app.use((req, _, next) => {
   let todoLists = [];
   if ("todoLists" in req.session) {
     req.session.todoLists.forEach(todoList => {
